@@ -122,6 +122,8 @@ checkAndAlert();
 // Schedule every 15 minutes
 setInterval(checkAndAlert, INTERVAL_MS);
 
+console.log("node start done");
+
 async function sendMockAlert() {
     const mockPlaces: PizzaPlace[] = [
         {
