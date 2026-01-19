@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data";
+const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 let previousSpikeIds: Set<string> = new Set();
@@ -22,6 +22,7 @@ interface PizzaPlace {
 interface ApiResponse {
     success: boolean;
     data: PizzaPlace[];
+    defcon_level: number;
 }
 
 async function checkAndAlert() {
@@ -44,9 +45,12 @@ async function checkAndAlert() {
         // Filter for ONLY the new ones
         const newSpikes = currentSpikes.filter(place => !previousSpikeIds.has(place.place_id));
 
-        if (newSpikes.length > 0) {
+        const defcon_level = json.defcon_level || 5;
+
+        if (newSpikes.length > 0 && defcon_level <= 3) {
+            console.log(`Defcon level is ${defcon_level}!!`);
             console.log(`Detected ${currentSpikes.length} total spikes. ${newSpikes.length} are new. Sending alert...`);
-            await sendDiscordAlert(newSpikes);
+            await sendDiscordAlert(newSpikes, defcon_level);
         } else if (currentSpikes.length > 0) {
             console.log(`Detected ${currentSpikes.length} spikes, but all were already alerted. Skipping.`);
         } else {
@@ -63,7 +67,7 @@ async function checkAndAlert() {
     }
 }
 
-async function sendDiscordAlert(places: PizzaPlace[]) {
+async function sendDiscordAlert(places: PizzaPlace[], defconLevel: number) {
     if (!DISCORD_WEBHOOK_URL) {
         console.error("DISCORD_WEBHOOK_URL is not set");
         return;
@@ -76,6 +80,7 @@ async function sendDiscordAlert(places: PizzaPlace[]) {
 
     // Header
     let messageBody = `# 🚨 **Unusual traffic detected near the Pentagon!**\n`;
+    messageBody += `**Doughcon:** ${defconLevel}\n`;
     messageBody += `**${places.length}** places currently showing spikes:\n\n`;
 
     // Process each place
@@ -149,5 +154,5 @@ async function sendMockAlert() {
     ];
 
     console.log("Sending mock alert...");
-    await sendDiscordAlert(mockPlaces);
+    await sendDiscordAlert(mockPlaces, 3);
 }
