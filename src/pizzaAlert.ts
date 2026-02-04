@@ -1,4 +1,3 @@
-
 const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
 const MIN_DEFCON = 2;
 
