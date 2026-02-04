@@ -5,6 +5,7 @@ dotenv.config();
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const MIN_DOUGHCON = 2;
 
 let previousSpikeIds: Set<string> = new Set();
 
@@ -47,7 +48,7 @@ async function checkAndAlert() {
 
         const defcon_level = json.defcon_level || 5;
 
-        if (newSpikes.length > 0 && defcon_level <= 3) {
+        if (newSpikes.length > 0 && defcon_level <= MIN_DOUGHCON) {
             console.log(`Defcon level is ${defcon_level}!!`);
             console.log(`Detected ${currentSpikes.length} total spikes. ${newSpikes.length} are new. Sending alert...`);
             await sendDiscordAlert(newSpikes, defcon_level);
