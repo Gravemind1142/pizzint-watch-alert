@@ -4,7 +4,7 @@
   "description": "Queries pizzint.watch and sends an alert to a discord webhook",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
     "build": "tsup src/index.ts --minify"
@@ -17,8 +17,11 @@
     "tsup": "^8.5.1"
   },
   "devDependencies": {
-    "@types/node": "^25.0.9",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.2.0",
     "eslint": "^9.39.2",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
