@@ -124,7 +124,7 @@ export async function sendNehDiscordAlert(markets: NehMarket[], webhookUrl?: str
         messageBody += `### ${icon} **${market.label}**\n`;
         messageBody += `> **Status:** ${label}\n`;
         messageBody += `> **Probability:** ${(market.price * 100).toFixed(1)}%\n`;
-        messageBody += `> [View Market](https://polymarket.com/event/${market.slug})\n\n`; // Assuming slug link, verified from JSON potentially? JSON has `eventSlug` sometimes, or `slug`. `slug` usually works for polymarket.
+        messageBody += `> [View Market](https://polymarket.com/market/${market.slug})\n\n`; // Assuming slug link, verified from JSON potentially? JSON has `eventSlug` sometimes, or `slug`. `slug` usually works for polymarket.
     }
 
     messageBody += `_Checked at ${new Date().toISOString()}_`;
