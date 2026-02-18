@@ -88,7 +88,7 @@ export async function checkAndAlertCommute() {
         } else if (currentLevel > previousLevel) {
             console.log(`Commute Improved: Level rose from ${previousLevel} to ${currentLevel}`);
         } else {
-            // No change or not severe enough
+            console.log("No abnormal commute activity detected.");
         }
 
         // Always update state to current level
