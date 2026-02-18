@@ -61,10 +61,15 @@ export async function checkAndAlert() {
             console.log("No spikes detected.");
         }
 
-        // Update our state for next time
-        // We overwrite the set completely so that if a spike STOPS happening, it's removed from the set.
-        // That way if it comes back later, it will be treated as new again.
-        previousSpikeIds = currentSpikeIds;
+        // Update state logic:
+        // If we are currently in a DANGEROUS state (defcon <= 2), we track the current spikes as 'handled'.
+        // If we are in a SAFE state, we clear the tracking. This ensures that if we transition back to
+        // a dangerous state, ALL current spikes are treated as 'new' and alerted on immediately.
+        if (defcon_level <= MIN_DEFCON) {
+            previousSpikeIds = currentSpikeIds;
+        } else {
+            previousSpikeIds = new Set();
+        }
 
     } catch (error) {
         console.error("Error fetching data:", error);
