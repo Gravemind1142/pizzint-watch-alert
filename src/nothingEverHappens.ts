@@ -2,6 +2,7 @@ const NOTHING_EVER_HAPPENS_URL = "https://www.pizzint.watch/api/neh-index/doomsd
 const SOMETHING_IS_HAPPENING_THRESHOLD = 0.65;
 const SOMETHING_HAPPENED_THRESHOLD = 0.99;
 const HYSTERESIS_BUFFER = 0.10;
+const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 // Track the threshold that triggered the alert for each market slug
 let previousAlerts: Map<string, number> = new Map();
@@ -63,12 +64,10 @@ export async function checkAndAlert() {
                     newAlerts.push(market);
                     previousAlerts.set(market.slug, currentThreshold);
                 } else {
-                    // Still alerting at same or lower threshold (but still above a threshold),
-                    // so we just keep tracking it. Use max of prev and current?
-                    // Actually, if it drops from 0.99 to 0.70 (still > 0.65), we probably shouldn't re-alert.
-                    // Just keep the previous threshold or update to current?
-                    // If we update to current (0.65), and it goes back to 0.99, we'd alert again. That seems correct.
-                    // But if we just stay at 0.99 record, we won't alert again until it clears 0.99 logic.
+                    // The market is still above the base threshold, but hasn't exceeded the highest alerted threshold.
+                    // We intentionally do not downgrade the tracked threshold. Retaining this high-water mark 
+                    // prevents spamming redundant alerts if the price fluctuates back and forth across a higher 
+                    // threshold (e.g., oscillating around 0.99) without first fully resetting via hysteresis.
                 }
             } else {
                 // Not meeting any threshold currently.
@@ -145,3 +144,14 @@ export async function sendNehDiscordAlert(markets: NehMarket[], webhookUrl?: str
         console.error("Error sending NEH webhook:", error);
     }
 }
+
+export function start() {
+    // Start immediately
+    checkAndAlert();
+
+    // Schedule
+    setInterval(() => {
+        checkAndAlert();
+    }, INTERVAL_MS);
+}
+

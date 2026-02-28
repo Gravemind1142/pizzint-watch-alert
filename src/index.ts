@@ -1,22 +1,14 @@
 import dotenv from "dotenv";
-import { checkAndAlert } from "./pizzaAlert";
-import { checkAndAlert as checkAndAlertNeh } from "./nothingEverHappens";
-import { checkAndAlertCommute } from "./optempoAlert";
+import { start as startPizzaAlert } from "./pizzaAlert";
+import { start as startNehAlert } from "./nothingEverHappens";
+import { start as startCommuteAlert } from "./optempoAlert";
 
 dotenv.config();
 
-const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-
-// Start immediately
-checkAndAlert();
-checkAndAlertNeh();
-checkAndAlertCommute();
-
-// Schedule every 15 minutes
-setInterval(() => {
-    checkAndAlert();
-    checkAndAlertNeh();
-    checkAndAlertCommute();
-}, INTERVAL_MS);
+// Start modules
+startPizzaAlert();
+startNehAlert();
+startCommuteAlert();
 
 console.log("node start done");
+

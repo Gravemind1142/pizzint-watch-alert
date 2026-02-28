@@ -4,6 +4,7 @@ dotenv.config();
 
 const COMMUTE_API_URL = "https://www.pizzint.watch/api/commute-index";
 const ALERT_THRESHOLD = 4; // Alert if level <= 4
+const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 // State to track previous level. Initialize to 5 (Business As Usual)
 let previousLevel = 5;
@@ -140,3 +141,14 @@ export async function sendCommuteAlert(data: CommuteResponse, webhookUrl?: strin
         console.error("Error sending commute webhook:", error);
     }
 }
+
+export function start() {
+    // Start immediately
+    checkAndAlertCommute();
+
+    // Schedule
+    setInterval(() => {
+        checkAndAlertCommute();
+    }, INTERVAL_MS);
+}
+

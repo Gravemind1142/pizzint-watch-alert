@@ -1,5 +1,6 @@
 const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
 const MIN_DEFCON = 2;
+const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
 let previousSpikeIds: Set<string> = new Set();
 
@@ -157,3 +158,14 @@ export async function sendMockAlert() {
     console.log("Sending mock alert...");
     await sendDiscordAlert(mockPlaces, 3);
 }
+
+export function start() {
+    // Start immediately
+    checkAndAlert();
+
+    // Schedule
+    setInterval(() => {
+        checkAndAlert();
+    }, INTERVAL_MS);
+}
+
