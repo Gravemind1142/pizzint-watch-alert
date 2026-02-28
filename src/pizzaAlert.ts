@@ -1,6 +1,13 @@
+import { loadModuleState, saveModuleState } from "./statePersistence";
+
 const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
 const MIN_DEFCON = 2;
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const STATE_KEY = "pizzaAlert";
+
+interface PizzaAlertState {
+    previousSpikeIds: string[];
+}
 
 let previousSpikeIds: Set<string> = new Set();
 
@@ -71,6 +78,8 @@ export async function checkAndAlert() {
         } else {
             previousSpikeIds = new Set();
         }
+
+        persistState();
 
     } catch (error) {
         console.error("Error fetching data:", error);
@@ -159,7 +168,19 @@ export async function sendMockAlert() {
     await sendDiscordAlert(mockPlaces, 3);
 }
 
+function persistState() {
+    saveModuleState<PizzaAlertState>(STATE_KEY, {
+        previousSpikeIds: Array.from(previousSpikeIds),
+    });
+}
+
 export function start() {
+    // Load persisted state
+    const saved = loadModuleState<PizzaAlertState>(STATE_KEY);
+    if (saved) {
+        previousSpikeIds = new Set(saved.previousSpikeIds ?? []);
+    }
+
     // Start immediately
     checkAndAlert();
 

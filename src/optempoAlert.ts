@@ -1,10 +1,16 @@
 import dotenv from "dotenv";
+import { loadModuleState, saveModuleState } from "./statePersistence";
 
 dotenv.config();
 
 const COMMUTE_API_URL = "https://www.pizzint.watch/api/commute-index";
 const ALERT_THRESHOLD = 4; // Alert if level <= 4
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const STATE_KEY = "optempoAlert";
+
+interface OptempoAlertState {
+    previousLevel: number;
+}
 
 // State to track previous level. Initialize to 5 (Business As Usual)
 let previousLevel = 5;
@@ -94,6 +100,7 @@ export async function checkAndAlertCommute() {
 
         // Always update state to current level
         previousLevel = currentLevel;
+        persistState();
 
     } catch (error) {
         console.error("Error checking commute alert:", error);
@@ -142,7 +149,17 @@ export async function sendCommuteAlert(data: CommuteResponse, webhookUrl?: strin
     }
 }
 
+function persistState() {
+    saveModuleState<OptempoAlertState>(STATE_KEY, { previousLevel });
+}
+
 export function start() {
+    // Load persisted state
+    const saved = loadModuleState<OptempoAlertState>(STATE_KEY);
+    if (saved) {
+        previousLevel = saved.previousLevel ?? 5;
+    }
+
     // Start immediately
     checkAndAlertCommute();
 

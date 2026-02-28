@@ -1,9 +1,16 @@
+import { loadModuleState, saveModuleState } from "./statePersistence";
+
 const NOTHING_EVER_HAPPENS_URL = "https://www.pizzint.watch/api/neh-index/doomsday";
 const SOMETHING_IS_HAPPENING_THRESHOLD = 0.65;
 const SOMETHING_HAPPENED_THRESHOLD = 0.99;
 const HYSTERESIS_BUFFER = 0.10;
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const HEIGHTENED_INTERVAL_MS = 1 * 60 * 1000; // 1 minute
+const STATE_KEY = "nothingEverHappens";
+
+interface NehAlertState {
+    previousAlerts: Record<string, number>;
+}
 
 // Track the threshold that triggered the alert for each market slug
 let previousAlerts: Map<string, number> = new Map();
@@ -111,6 +118,8 @@ export async function checkAndAlert(): Promise<boolean> {
             console.log("No new NEH alerts.");
         }
 
+        persistState();
+
         return hasHeightenedMarket;
 
     } catch (error) {
@@ -161,7 +170,19 @@ export async function sendNehDiscordAlert(markets: NehMarket[], webhookUrl?: str
     }
 }
 
+function persistState() {
+    saveModuleState<NehAlertState>(STATE_KEY, {
+        previousAlerts: Object.fromEntries(previousAlerts),
+    });
+}
+
 export function start() {
+    // Load persisted state
+    const saved = loadModuleState<NehAlertState>(STATE_KEY);
+    if (saved) {
+        previousAlerts = new Map(Object.entries(saved.previousAlerts ?? {}));
+    }
+
     async function scheduleNext() {
         const heightened = await checkAndAlert();
         const nextInterval = heightened ? HEIGHTENED_INTERVAL_MS : INTERVAL_MS;
@@ -172,4 +193,3 @@ export function start() {
     // Start immediately
     scheduleNext();
 }
-
