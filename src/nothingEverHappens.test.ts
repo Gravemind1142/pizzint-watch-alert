@@ -31,7 +31,8 @@ describe('nothingEverHappens', () => {
             ])) // for fetchNehData
             .mockImplementationOnce(() => Promise.resolve({ ok: true } as Response)); // for sendNehDiscordAlert (webhook)
 
-        await checkAndAlert();
+        const result = await checkAndAlert();
+        expect(result).toBe(true); // 0.70 is in the heightened range
 
         // Expect fetch to be called for data and webhook
         expect(global.fetch).toHaveBeenCalledTimes(2);
@@ -52,8 +53,9 @@ describe('nothingEverHappens', () => {
             ]))
             .mockImplementationOnce(() => Promise.resolve({ ok: true } as Response));
 
-        await checkAndAlert();
+        const result = await checkAndAlert();
 
+        expect(result).toBe(true); // Both markets in heightened range
         expect(global.fetch).toHaveBeenCalledTimes(2);
         const webhookCall = (global.fetch as jest.Mock).mock.calls[1];
         const body = JSON.parse(webhookCall[1].body);
@@ -97,7 +99,8 @@ describe('nothingEverHappens', () => {
             .mockReturnValueOnce(mockApiResponse([{ slug: 'market-escalate-1', label: 'Market Escalate 1', price: 0.99 }]))
             .mockReturnValueOnce(Promise.resolve({ ok: true } as Response));
 
-        await checkAndAlert();
+        const result = await checkAndAlert();
+        expect(result).toBe(false); // 0.99 is at SOMETHING_HAPPENED_THRESHOLD, not in heightened range
         expect(global.fetch).toHaveBeenCalledTimes(2); // Should alert again
         const webhookCall = (global.fetch as jest.Mock).mock.calls[1];
         const body = JSON.parse(webhookCall[1].body);
@@ -139,5 +142,60 @@ describe('nothingEverHappens', () => {
             .mockReturnValueOnce(Promise.resolve({ ok: true }));
         await checkAndAlert();
         expect(global.fetch).toHaveBeenCalledTimes(2); // Fetch + Webhook
+    });
+
+    describe('heightened polling return value', () => {
+        it('should return false when no markets exceed any threshold', async () => {
+            (global.fetch as jest.Mock)
+                .mockReturnValueOnce(mockApiResponse([
+                    { slug: 'market-low', label: 'Market Low', price: 0.30 }
+                ]));
+
+            const result = await checkAndAlert();
+            expect(result).toBe(false);
+        });
+
+        it('should return true when a market is between SOMETHING_IS_HAPPENING and SOMETHING_HAPPENED thresholds', async () => {
+            (global.fetch as jest.Mock)
+                .mockReturnValueOnce(mockApiResponse([
+                    { slug: 'market-mid', label: 'Market Mid', price: 0.80 }
+                ]))
+                .mockReturnValueOnce(Promise.resolve({ ok: true } as Response));
+
+            const result = await checkAndAlert();
+            expect(result).toBe(true);
+        });
+
+        it('should return false when all markets are at or above SOMETHING_HAPPENED threshold', async () => {
+            (global.fetch as jest.Mock)
+                .mockReturnValueOnce(mockApiResponse([
+                    { slug: 'market-high', label: 'Market High', price: 0.99 }
+                ]))
+                .mockReturnValueOnce(Promise.resolve({ ok: true } as Response));
+
+            const result = await checkAndAlert();
+            expect(result).toBe(false);
+        });
+
+        it('should return true if at least one market is in the heightened range among mixed markets', async () => {
+            (global.fetch as jest.Mock)
+                .mockReturnValueOnce(mockApiResponse([
+                    { slug: 'market-low', label: 'Market Low', price: 0.30 },
+                    { slug: 'market-mid', label: 'Market Mid', price: 0.75 },
+                    { slug: 'market-high', label: 'Market High', price: 0.99 }
+                ]))
+                .mockReturnValueOnce(Promise.resolve({ ok: true } as Response));
+
+            const result = await checkAndAlert();
+            expect(result).toBe(true);
+        });
+
+        it('should return false on fetch error', async () => {
+            (global.fetch as jest.Mock)
+                .mockReturnValueOnce(Promise.reject(new Error('Network error')));
+
+            const result = await checkAndAlert();
+            expect(result).toBe(false);
+        });
     });
 });

@@ -3,6 +3,7 @@ const SOMETHING_IS_HAPPENING_THRESHOLD = 0.65;
 const SOMETHING_HAPPENED_THRESHOLD = 0.99;
 const HYSTERESIS_BUFFER = 0.10;
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const HEIGHTENED_INTERVAL_MS = 1 * 60 * 1000; // 1 minute
 
 // Track the threshold that triggered the alert for each market slug
 let previousAlerts: Map<string, number> = new Map();
@@ -43,16 +44,28 @@ function getMetThreshold(price: number): number {
     return 0;
 }
 
-export async function checkAndAlert() {
+/**
+ * Checks the NEH index and sends alerts as needed.
+ * Returns true if any market is in the heightened monitoring range
+ * (above SOMETHING_IS_HAPPENING_THRESHOLD but below SOMETHING_HAPPENED_THRESHOLD),
+ * which signals that we should poll more frequently.
+ */
+export async function checkAndAlert(): Promise<boolean> {
     console.log(`[${new Date().toISOString()}] Checking Nothing Ever Happens index...`);
     try {
         const data = await fetchNehData();
         const newAlerts: NehMarket[] = [];
+        let hasHeightenedMarket = false;
 
         // 1. Process current markets
         for (const market of data.markets) {
             const currentThreshold = getMetThreshold(market.price);
             const previousThreshold = previousAlerts.get(market.slug);
+
+            // Track whether any market is in the "something is happening" range
+            if (market.price >= SOMETHING_IS_HAPPENING_THRESHOLD && market.price < SOMETHING_HAPPENED_THRESHOLD) {
+                hasHeightenedMarket = true;
+            }
 
             if (currentThreshold > 0) {
                 // It is currently in an alertable state
@@ -98,8 +111,11 @@ export async function checkAndAlert() {
             console.log("No new NEH alerts.");
         }
 
+        return hasHeightenedMarket;
+
     } catch (error) {
         console.error("Error checking NEH data:", error);
+        return false;
     }
 }
 
@@ -146,12 +162,14 @@ export async function sendNehDiscordAlert(markets: NehMarket[], webhookUrl?: str
 }
 
 export function start() {
-    // Start immediately
-    checkAndAlert();
+    async function scheduleNext() {
+        const heightened = await checkAndAlert();
+        const nextInterval = heightened ? HEIGHTENED_INTERVAL_MS : INTERVAL_MS;
+        console.log(`Next NEH check in ${nextInterval / 1000 / 60} minute(s).`);
+        setTimeout(scheduleNext, nextInterval);
+    }
 
-    // Schedule
-    setInterval(() => {
-        checkAndAlert();
-    }, INTERVAL_MS);
+    // Start immediately
+    scheduleNext();
 }
 
