@@ -50,7 +50,7 @@ export interface CommuteResponse {
 }
 
 export async function fetchCommuteData(): Promise<CommuteResponse> {
-    const response = await fetch(COMMUTE_API_URL);
+    const response = await fetch(`${COMMUTE_API_URL}?t=${Date.now()}`);
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
