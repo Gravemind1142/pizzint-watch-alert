@@ -1,7 +1,7 @@
 import { loadModuleState, saveModuleState } from "./statePersistence";
 
 const PIZZINT_URL = "https://www.pizzint.watch/api/dashboard-data?nocache=1";
-const MIN_DEFCON = 2;
+const MIN_DEFCON = 1;
 const INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const STATE_KEY = "pizzaAlert";
 
@@ -70,9 +70,9 @@ export async function checkAndAlert() {
         }
 
         // Update state logic:
-        // If we are currently in a DANGEROUS state (defcon <= 2), we track the current spikes as 'handled'.
-        // If we are in a SAFE state, we clear the tracking. This ensures that if we transition back to
-        // a dangerous state, ALL current spikes are treated as 'new' and alerted on immediately.
+        // If we are currently at reporting threshold, we track the current spikes as 'handled'.
+        // If we are below reporting threshold, we clear the tracking. This ensures that if we transition back to
+        // a above reporting threshold, ALL current spikes are treated as 'new' and alerted on immediately.
         if (defcon_level <= MIN_DEFCON) {
             previousSpikeIds = currentSpikeIds;
         } else {
